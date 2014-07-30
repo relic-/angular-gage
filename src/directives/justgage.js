@@ -104,16 +104,16 @@ angular.module('frapontillo.gage.directives', ['frapontillo.gage.controllers'])
            * It also binds the scope values to appropriate changes
            */
           var init = function() {
-            var justgageOptions = {
-              parentNode: element[0]
-            };
-            angular.extend(justgageOptions, justgageCtrl.getDefinedOptions());
-            justgage = new JustGage(justgageOptions);
             if(justgage) {
               // Remove existing canvas from DOM
               var canvasDom = justgage.canvas.canvas;
               canvasDom.parentNode.removeChild(canvasDom);
             }
+            var justgageOptions = {
+              parentNode: element[0]
+            };
+            angular.extend(justgageOptions, justgageCtrl.getDefinedOptions());
+            justgage = new JustGage(justgageOptions);
             while(watchers.length > 0) {
               // Clear existing watcher (see http://stackoverflow.com/a/17306971 why while & pop)
               var watcher = watchers.pop();

@@ -1,6 +1,6 @@
 /**
  * angular-gage
- * @version v0.0.1 - 2014-05-16
+ * @version v0.0.1 - 2014-07-30
  * @author Francesco Pontillo (francescopontillo@gmail.com)
  * @link https://github.com/frapontillo/angular-gage
  * @license Apache-2.0
@@ -141,30 +141,38 @@ angular.module('frapontillo.gage.directives', ['frapontillo.gage.controllers']).
     },
     controller: 'justgageCtrl',
     link: function (scope, element, attrs, justgageCtrl) {
-      var justgage;
+      var justgage, watchers = [];
       /**
            * Bind the `value` property on the scope in order to refresh the JustGage when it changes.
            */
       var bindValue = function () {
-        scope.$watch('value', function (newValue, oldValue) {
+        watchers.push(scope.$watch('value', function (newValue, oldValue) {
           if (newValue !== oldValue) {
-            justgage.refresh(newValue);
+            justgage.refresh(newValue, scope.max);
           }
-        });
+        }));
+        watchers.push(scope.$watch('max', function (newValue, oldValue) {
+          if (newValue !== oldValue) {
+            justgage.refresh(scope.value, newValue);
+          }
+        }));
       };
       /**
            * Bind all scope paramenters other than `value` and `textRenderer` and re-creates the JustGage whenever
            * one of them changes.
            */
       var bindOtherOptions = function () {
-        var otherOptionsNames = justgageCtrl.getOptionsNames('value');
+        var otherOptionsNames = justgageCtrl.getOptionsNames([
+            'value',
+            'max'
+          ]);
         // TODO: move to angularjs 1.3 and replace with $watchGroup
         angular.forEach(otherOptionsNames, function (name) {
-          scope.$watch(name, function (newValue, oldValue) {
+          watchers.push(scope.$watch(name, function (newValue, oldValue) {
             if (newValue !== oldValue) {
               init();
             }
-          });
+          }));
         });
       };
       /**
@@ -172,9 +180,19 @@ angular.module('frapontillo.gage.directives', ['frapontillo.gage.controllers']).
            * It also binds the scope values to appropriate changes
            */
       var init = function () {
+        if (justgage) {
+          // Remove existing canvas from DOM
+          var canvasDom = justgage.canvas.canvas;
+          canvasDom.parentNode.removeChild(canvasDom);
+        }
         var justgageOptions = { parentNode: element[0] };
         angular.extend(justgageOptions, justgageCtrl.getDefinedOptions());
         justgage = new JustGage(justgageOptions);
+        while (watchers.length > 0) {
+          // Clear existing watcher (see http://stackoverflow.com/a/17306971 why while & pop)
+          var watcher = watchers.pop();
+          watcher();
+        }
         // Bind scope changes to element methods
         bindValue();
         bindOtherOptions();
